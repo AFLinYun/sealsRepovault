@@ -35,7 +35,8 @@ DEFAULT_CONFIG = {
 }
 
 GITHUB_RE = re.compile(r"^https?://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/?$")
-ID_RE = re.compile(r"^gh-[a-z0-9][a-z0-9-]*$")
+# GitHub owner/repo 合法字符：字母、数字、连字符、下划线、点
+ID_RE = re.compile(r"^gh-[a-z0-9][a-z0-9._-]*$")
 
 TZ = timezone.utc
 
@@ -87,9 +88,13 @@ def make_id(url: str) -> str:
 
 
 def url_from_id(rid: str) -> str:
+    """从 ID 反推 URL。注意：owner/repo 本身可能含连字符，无法无歧义还原；
+    该函数只用于 ID 格式校验场景，实际 URL 以记录字段为准。"""
     if not ID_RE.match(rid):
         raise ValueError(f"非法 ID: {rid}")
-    _, owner, repo = rid.split("-", 2)
+    # 去掉前缀 gh- 后剩余为 owner-repo，按第一个连字符切分（owner 通常不含连字符）
+    rest = rid[3:]
+    owner, _, repo = rest.partition("-")
     return f"https://github.com/{owner}/{repo}"
 
 
