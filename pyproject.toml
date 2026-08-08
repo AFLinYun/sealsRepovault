@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sealsrepo"
+version = "0.1.0"
+description = "Zero-dependency GitHub project intake & evaluation tool"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+[project.scripts]
+sealsrepo = "sealsrepo.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sealsrepo*"]
