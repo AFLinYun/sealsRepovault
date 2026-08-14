@@ -141,5 +141,58 @@ class TestCliFlow(unittest.TestCase):
         self.assertTrue(all(x["source"] == "trending" for x in recs))
 
 
+class TestGradeEvidenceGuard(unittest.TestCase):
+    """S/A 级评级证据硬校验（2026-08-14 加固）。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        r = str(self.root)
+        self.assertEqual(main(["init", "--root", r]), 0)
+        self.assertEqual(main(["add", "--root", r, "https://github.com/foo/bar", "--desc", "x"]), 0)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_online_check_rejects_A(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "A", "--summary", "s", "--evidence", "online-check"])
+        self.assertNotEqual(rc, 0)
+        rec = core.load_record(str(self.root), "gh-foo-bar")
+        self.assertIsNone(rec.get("grade"), "被拒评级不得写入记录")
+
+    def test_online_check_rejects_S(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "S", "--summary", "s", "--evidence", "online-check"])
+        self.assertNotEqual(rc, 0)
+
+    def test_missing_evidence_rejects_A(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "A", "--summary", "s"])
+        self.assertNotEqual(rc, 0)
+
+    def test_static_check_rejects_A(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "A", "--summary", "s", "--evidence", "static-check"])
+        self.assertNotEqual(rc, 0)
+
+    def test_T0_allows_A(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "A", "--summary", "s", "--evidence", "T0"])
+        self.assertEqual(rc, 0)
+        rec = core.load_record(str(self.root), "gh-foo-bar")
+        self.assertEqual(rec["grade"], "A")
+
+    def test_T3_allows_S(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "S", "--summary", "s", "--evidence", "T3"])
+        self.assertEqual(rc, 0)
+
+    def test_B_unrestricted(self):
+        rc = main(["grade", "--root", str(self.root), "gh-foo-bar",
+                   "--grade", "B", "--summary", "s", "--evidence", "online-check"])
+        self.assertEqual(rc, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -22,6 +22,28 @@ from typing import Any, Optional
 
 VALID_STATUS = {"candidate", "evaluated", "retained", "rejected", "archived"}
 VALID_GRADES = {"S", "A", "B", "C", "D"}
+
+# 证据层级（2026-08-14 定稿）：author-claim < online-check < static-check < T0 < T1 < T2 < T3
+# T0 = 装上能跑，T1 = 真实样本跑通。S/A 级评级要求证据 >= T0（cli.cmd_grade 硬校验）
+# ⚠️ key 必须全小写：evidence_rank 内部会 lower() 归一，大写 key 将匹配不到返回 -1
+EVIDENCE_RANK = {
+    "author-claim": 0,
+    "online-check": 1,
+    "static-check": 2,
+    "t0": 3,
+    "t1": 4,
+    "t2": 5,
+    "t3": 6,
+}
+
+
+def evidence_rank(evidence) -> int:
+    """证据级别排名；未知/未提供返回 -1（低于一切合法级别）。"""
+    if not evidence:
+        return -1
+    return EVIDENCE_RANK.get(str(evidence).strip().lower(), -1)
+
+
 DEFAULT_CONFIG = {
     "weights": {
         "agent_capability": 30,

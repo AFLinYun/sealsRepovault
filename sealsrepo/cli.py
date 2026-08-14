@@ -73,6 +73,16 @@ def cmd_grade(args: argparse.Namespace) -> int:
     if args.grade in ("S", "A", "B") and not args.summary:
         print("S/A/B 评级必须提供 --summary（能力摘要）", file=sys.stderr)
         return 1
+    # 硬校验（2026-08-14 加固）：S/A 级要求证据 >= T0（装上能跑）。
+    # 防止以 author-claim/online-check/static-check（仅联网核查）虚标高评级。
+    if args.grade in ("S", "A"):
+        ev = args.evidence or rec.get("evidence")
+        if core.evidence_rank(ev) < core.evidence_rank("T0"):
+            print(
+                f"{args.grade} 级评级要求证据级别 >= T0（装上能跑），当前: {ev or '未提供'} —— author-claim/online-check/static-check 不足以评 {args.grade}",
+                file=sys.stderr,
+            )
+            return 1
     rec["grade"] = args.grade
     if args.summary:
         rec["capability_summary"] = args.summary
